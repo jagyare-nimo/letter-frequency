@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonProperty
 
 
+/**
+ * Base sealed class for representing items in the repository (files or directories)
+ */
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.PROPERTY,
@@ -17,12 +20,14 @@ import com.fasterxml.jackson.annotation.JsonProperty
 )
 sealed class RepoItem
 
+// Class for representing files in the repository
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class RepoFile(
     val name: String,
     @JsonProperty("download_url") val downloadUrl: String
 ) : RepoItem()
 
+// Class for representing directories in the repository
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class RepoDir(
     val name: String,

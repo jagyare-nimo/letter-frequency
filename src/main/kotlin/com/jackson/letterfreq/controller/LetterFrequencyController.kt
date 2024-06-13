@@ -5,6 +5,9 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * Controller to expose the letter frequency API
+ */
 @RestController
 @RequestMapping("/api/letters")
 class LetterFrequencyController (

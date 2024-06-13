@@ -11,12 +11,18 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
+/**
+ * Component to handle file processing and calculate letter frequency
+ */
 @Component
 class FileProcessingListener {
 
     private val client = HttpClient.newHttpClient()
     private val globalLetterFrequency = mutableMapOf<Char, Int>()
 
+    /**
+     * Function to handle file processing event
+      */
     fun handleFileProcessingEvent(fileUrl: String): Flow<Map.Entry<Char, Int>> = flow {
         try {
             val request = HttpRequest.newBuilder()
@@ -40,6 +46,10 @@ class FileProcessingListener {
     }
         .flowOn(Dispatchers.IO)
 
+
+    /**
+     Function to process content and calculate letter frequency
+     */
     private fun processContent(content: String): Map<Char, Int> {
         val letterFrequency = mutableMapOf<Char, Int>()
         for (c in content) {
@@ -51,12 +61,18 @@ class FileProcessingListener {
         return letterFrequency
     }
 
+    /**
+      Function to aggregate letter frequency into the global frequency
+      */
     private fun aggregateLetterFrequency(letterFrequency: Map<Char, Int>) {
         for ((key, value) in letterFrequency) {
             globalLetterFrequency[key] = globalLetterFrequency.getOrDefault(key, 0) + value
         }
     }
 
+    /**
+     * Function to get the global letter frequency
+    */
     fun getGlobalLetterFrequency(): Map<Char, Int> {
         return globalLetterFrequency
     }

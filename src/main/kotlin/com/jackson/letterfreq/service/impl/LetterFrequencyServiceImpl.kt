@@ -20,7 +20,9 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
-
+/**
+  Service implementation for letter frequency operations
+ */
 @Service
 class LetterFrequencyServiceImpl(
     private val fileProcessingListener: FileProcessingListener,
@@ -31,6 +33,9 @@ class LetterFrequencyServiceImpl(
 
     private val client = HttpClient.newHttpClient()
 
+    /**
+      Function to calculate the frequency of letters in the items
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun calculateLetterFrequency(): Map<Char, Int> {
         val items = fetchRepoItems(githubUrl)
@@ -47,6 +52,9 @@ class LetterFrequencyServiceImpl(
             .associate { it.key to it.value }
     }
 
+    /**
+      Function to process items
+     */
     private fun processItems(items: List<RepoItem>): List<Flow<Map.Entry<Char, Int>>> {
         return items.flatMap { item ->
             when (item) {
@@ -63,6 +71,9 @@ class LetterFrequencyServiceImpl(
         }
     }
 
+    /**
+     * Function to fetch items from the github repository API
+     */
     override suspend fun fetchRepoItems(apiUrl: String): List<RepoItem> = withContext(Dispatchers.IO) {
         val request = HttpRequest.newBuilder()
             .uri(URI.create(apiUrl))
