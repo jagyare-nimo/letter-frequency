@@ -29,14 +29,6 @@ dependencies {
 	implementation("com.fasterxml.jackson.core:jackson-annotations")
 
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	//testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-	//testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
-
-//	testImplementation("org.springframework.boot:spring-boot-starter-test")
-//	testImplementation("io.projectreactor:reactor-test")
-//	testImplementation("io.mockk:mockk:1.12.0")
-//	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(module = "mockito-core")
@@ -44,6 +36,7 @@ dependencies {
 	testImplementation("io.projectreactor:reactor-test")
 	testImplementation("io.mockk:mockk:1.12.0")
 	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
+	testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
 
 }
 
