@@ -28,6 +28,8 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("com.fasterxml.jackson.core:jackson-annotations")
 
+	implementation("io.github.microutils:kotlin-logging:2.0.11")
+
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {

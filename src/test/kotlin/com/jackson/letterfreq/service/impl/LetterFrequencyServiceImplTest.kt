@@ -9,6 +9,7 @@ import com.jackson.letterfreq.model.RepoItem
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineDispatcher
@@ -108,6 +109,31 @@ class LetterFrequencyServiceImplTest {
 
         assertEquals(expectedItems, result)
         verify { httpClient.send(any<HttpRequest>(), any<HttpResponse.BodyHandler<String>>()) }
+    }
+
+    @Test
+    fun `processItems should handle RepoFile and RepoDir correctly`() = runBlocking {
+        val repoFile = RepoFile(name = "test.js", downloadUrl = "https://raw.githubusercontent.com/lodash/lodash/main/test.js")
+        val repoDir = RepoDir(name = "dir", url = "https://api.github.com/repos/lodash/lodash/contents/dir")
+        val items = listOf<RepoItem>(repoFile)
+        val flowList: Flow<Map.Entry<Char, Int>> = mockk()
+        val expectedFlowList = listOf(flowList)
+
+        coEvery { fileProcessingListener.handleFileProcessingEvent(repoFile.downloadUrl) } returns flowList
+        coEvery { letterFrequencyService.fetchRepoItems(repoDir.url) } returns listOf(repoFile)
+
+        val result = letterFrequencyService.processItems(items)
+
+        assertEquals(expectedFlowList, result)
+    }
+
+    @Test
+    fun `processItems should handle exceptions correctly`() = runBlocking {
+        val repoDir = RepoDir(name = "dir", url = "https://api.github.com/repos/lodash/lodash/contents/dir")
+        val items = listOf<RepoItem>(repoDir)
+        coEvery { letterFrequencyService.fetchRepoItems(repoDir.url) } throws Exception("Fetch error")
+        val result = letterFrequencyService.processItems(items)
+        assertEquals(emptyList<Flow<Map.Entry<Char, Int>>>(), result)
     }
 
 }

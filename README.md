@@ -43,6 +43,11 @@ The application uses Kotlin coroutines and Spring WebFlux to create a reactive w
 ./gradlew bootRun
 ```
 
+## Run Test
+```bash
+ ./gradlew test
+```
+
 ## API EndPoint
 URL: /api/letters/frequency
 Method: GET

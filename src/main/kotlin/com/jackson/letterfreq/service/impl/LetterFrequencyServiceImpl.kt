@@ -7,6 +7,7 @@ import com.jackson.letterfreq.model.RepoDir
 import com.jackson.letterfreq.model.RepoFile
 import com.jackson.letterfreq.model.RepoItem
 import com.jackson.letterfreq.service.LetterFrequencyService
+import com.jackson.letterfreq.util.Logger.logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -38,56 +39,107 @@ class LetterFrequencyServiceImpl(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun calculateLetterFrequency(): Map<Char, Int> {
-        val items = fetchRepoItems(githubUrl)
-        val flowList = processItems(items)
+        return try {
+           logger.info { "Starting letter frequency calculation" }
 
-        flowList
-            .asFlow()
-            .flatMapMerge { it }
-            .collect()
+            val items = fetchRepoItems(githubUrl)
+            val flowList = processItems(items)
 
-        val letterFrequency = fileProcessingListener.getGlobalLetterFrequency()
-        return letterFrequency.entries
-            .sortedByDescending { it.value }
-            .associate { it.key to it.value }
+            flowList
+                .asFlow()
+                .flatMapMerge { it }
+                .collect()
+
+            val letterFrequency = fileProcessingListener.getGlobalLetterFrequency()
+
+            logger.info { "Successfully calculated letter frequency" }
+
+            letterFrequency.entries
+                .sortedByDescending { it.value }
+                .associate { it.key to it.value }
+
+        } catch (exception: Exception) {
+            logger.error { "Error occurred during letter frequency calculation: ${exception.message}" }
+            throw exception
+        }
     }
 
     /**
       Function to process items
      */
-    private fun processItems(items: List<RepoItem>): List<Flow<Map.Entry<Char, Int>>> {
+    fun processItems(items: List<RepoItem>): List<Flow<Map.Entry<Char, Int>>> {
         return items.flatMap { item ->
-            when (item) {
-                is RepoFile -> {
-                    if (item.name.endsWith(".js") || item.name.endsWith(".ts")) {
-                        listOf(fileProcessingListener.handleFileProcessingEvent(item.downloadUrl))
-                    } else emptyList()
+            try {
+                return@flatMap when (item) {
+
+                    is RepoFile -> {
+                        if (item.name.endsWith(".js") || item.name.endsWith(".ts")) {
+                            logger.info { "Processing file: ${item.name}" }
+                            listOf(fileProcessingListener.handleFileProcessingEvent(item.downloadUrl))
+                        } else {
+                            logger.warn { "Skipping non-JS/TS file: ${item.name}" }
+                            emptyList()
+                        }
+                    }
+
+                    is RepoDir -> {
+                        logger.info { "Processing directory: ${item.name}" }
+                        val dirItems: List<RepoItem> = runBlocking {
+                            try {
+                                fetchRepoItems(item.url)
+                            } catch (e: Exception) {
+                                logger.error { "Error fetching items from directory: ${item.url}, ${e.message}" }
+                                throw e
+                            }
+                        }
+
+                        processItems(dirItems)
+                    }
+
+                    else -> {
+                        logger.warn { "Unknown item type: $item" }
+                        emptyList()
+                    }
                 }
-                is RepoDir -> {
-                    val dirItems: List<RepoItem> = runBlocking { fetchRepoItems(item.url) }
-                    processItems(dirItems)
-                }
+            } catch (exception: Exception) {
+                logger.error { "Error processing item: $item, ${exception.message}" }
+                emptyList()
             }
         }
     }
 
     /**
-     * Function to fetch items from the github repository API
+     * Function to fetch items from the gitHub repository API
      */
     override suspend fun fetchRepoItems(apiUrl: String): List<RepoItem> = withContext(Dispatchers.IO) {
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(apiUrl))
-            .header("Authorization", "token $githubToken")
-            .header("Accept", "application/vnd.github.v3+json")
-            .build()
+        try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create(apiUrl))
+                .header("Authorization", "token $githubToken")
+                .header("Accept", "application/vnd.github.v3+json")
+                .build()
 
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            logger.info { "Sending request to GitHub API: $apiUrl" }
 
-        if (response.statusCode() != 200) {
-            throw IOException("Failed to fetch items from GitHub: ${response.statusCode()} - ${response.body()}")
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+
+            if (response.statusCode() != 200) {
+                val errorMessage = "Failed to fetch items from GitHub: ${response.statusCode()} - ${response.body()}"
+                logger.error { errorMessage }
+                throw IOException(errorMessage)
+            }
+
+            logger.info { "Successfully fetched items from GitHub: $apiUrl" }
+
+            objectMapper.readValue(response.body(), object : TypeReference<List<RepoItem>>() {})
+
+        } catch (ioException: IOException) {
+            logger.error { "Error occurred while fetching items from GitHub: ${ioException.message}" }
+            throw ioException
+        } catch (inException: InterruptedException) {
+            logger.error { "Request to GitHub was interrupted: ${inException.message}" }
+            throw inException
         }
-
-        objectMapper.readValue(response.body(), object : TypeReference<List<RepoItem>>() {})
     }
 
     override fun getItemUrl(): String = githubUrl

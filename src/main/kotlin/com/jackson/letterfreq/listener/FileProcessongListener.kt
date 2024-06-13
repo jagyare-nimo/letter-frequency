@@ -1,5 +1,6 @@
 package com.jackson.letterfreq.listener
 
+import com.jackson.letterfreq.util.Logger.logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -24,6 +25,7 @@ class FileProcessingListener {
      * Function to handle file processing event
       */
     fun handleFileProcessingEvent(fileUrl: String): Flow<Map.Entry<Char, Int>> = flow {
+        logger.info {"Reading file content for :: $fileUrl "}
         try {
             val request = HttpRequest.newBuilder()
                 .uri(URI.create(fileUrl))
@@ -38,13 +40,15 @@ class FileProcessingListener {
             // Aggregate the results into the global letter frequency
             aggregateLetterFrequency(letterFrequency)
 
+            logger.info("Aggregated letter frequency:: $globalLetterFrequency ")
+
             letterFrequency.entries.forEach { emit(it) }
 
-        } catch (e: IOException) {
-            println("Error processing file: ${e.message}")
+        } catch (exception: IOException) {
+            logger.error { "Error processing file: ${exception.message}"}
         }
-    }
-        .flowOn(Dispatchers.IO)
+
+    }.flowOn(Dispatchers.IO)
 
 
     /**
